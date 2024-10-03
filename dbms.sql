@@ -1,0 +1,6 @@
+sqlplus64
+CSE1006/academy @192.168.18.6:1521/ORCL
+set autocommit on;
+SET LINESIZE 150;
+SET PAGESIZE 25;
+

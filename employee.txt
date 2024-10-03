@@ -1,0 +1,218 @@
+ EMPLOYEE (FNAME, MINIT, LNAME, SSN, BDATE, ADDRESS, SEX, SALARY,
+ #SUPERSSN, #DNO)
+ DEPARTMENT (DNAME, DNUMBER, #MGRSSN, MGRSTARTDATE)
+ DEPT_LOCATIONS (#DNUMBER, DLOCATION)
+ PROJECT (PNAME, PNUMBER, PLOCATION, #DNUM)
+ WORKS_ON (#ESSN, #PNO, HOURS)
+ DEPENDENT (#ESSN, DEPENDENT_NAME, SEX, BDATE, RELATIONSHIP)
+
+
+
+
+
+
+
+
+
+--1. For every project located in 'Stafford', list the project number, the controlling department number, and the department 
+--manager's last name, address, and birth date.  
+SELECT P.PNUMBER, P.DNUM, E.LNAME, E.ADDRESS, E.BDATE
+FROM PROJECT P
+JOIN DEPARTMENT D ON P.DNUM = D.DNUMBER
+JOIN EMPLOYEE E ON D.MGRSSN = E.SSN
+WHERE P.PLOCATION = 'Stafford';
+
+
+
+
+--2. Retrieve the name of each employee who works on all the projects controlled by department number 5. 
+
+SELECT E.FNAME || ' ' || E.LNAME AS FULL_NAME
+FROM EMPLOYEE E
+WHERE NOT EXISTS (
+    SELECT P.PNUMBER
+    FROM PROJECT P
+    WHERE P.DNUM = 5
+    MINUS
+    SELECT W.PNO
+    FROM WORKS_ON W
+    WHERE W.ESSN = E.SSN
+);
+
+
+
+ 
+
+--3. Make a list of all project numbers for projects that involve an employee whose last name is 'Smith', either as a worker 
+--or as a manager of the department that controls the project. 
+SELECT DISTINCT P.PNUMBER
+FROM PROJECT P
+JOIN WORKS_ON W ON P.PNUMBER = W.PNO
+JOIN EMPLOYEE E ON W.ESSN = E.SSN
+WHERE E.LNAME = 'Smith'
+UNION
+SELECT DISTINCT P.PNUMBER
+FROM PROJECT P
+JOIN DEPARTMENT D ON P.DNUM = D.DNUMBER
+JOIN EMPLOYEE E ON D.MGRSSN = E.SSN
+WHERE E.LNAME = 'Smith';
+
+SELECT DISTINCT P.PNUMBER
+FROM PROJECT P
+JOIN WORKS_ON W ON P.PNUMBER = W.PNO
+JOIN EMPLOYEE E ON W.ESSN = E.SSN
+WHERE E.LNAME = 'Smith'
+UNION
+SELECT DISTINCT P.PNUMBER
+FROM PROJECT P
+JOIN DEPARTMENT D ON P.DNUM = D.DNUMBER
+JOIN EMPLOYEE E ON D.MGRSSN = E.SSN
+WHERE E.LNAME = 'Smith';
+--2 OR MORE DEPENDENTS
+ SELECT LNAME, FNAME
+ FROM EMPLOYEE
+ WHERE (SELECT COUNT (*)
+ FROM DEPENDENT
+ WHERE SSN = ESSN)>=2 ;
+--4. Retrieve the names of employees who have no dependents. 
+
+SELECT E.FNAME, E.LNAME
+FROM EMPLOYEE E
+WHERE NOT EXISTS (
+    SELECT 1
+    FROM DEPENDENT D
+    WHERE D.ESSN = E.SSN
+);
+
+--5. List the names of managers who have at least one dependent. 
+SELECT DISTINCT E.FNAME, E.LNAME
+FROM EMPLOYEE E
+JOIN DEPARTMENT D ON E.SSN = D.MGRSSN
+WHERE EXISTS (
+    SELECT 1
+    FROM DEPENDENT DEP
+    WHERE DEP.ESSN = D.MGRSSN
+);
+
+--6. For each employee, retrieve the employee's first and last name and the first and last name of his or her immediate 
+--supervisor. 
+
+SELECT E.FNAME AS EmployeeFirstName, E.LNAME AS EmployeeLastName,
+       S.FNAME AS SupervisorFirstName, S.LNAME AS SupervisorLastName
+FROM EMPLOYEE E
+ JOIN EMPLOYEE S ON E.SUPERSSN = S.SSN;
+
+SELECT E.FNAME AS EmployeeFirstName, E.LNAME AS EmployeeLastName,
+       S.FNAME AS SupervisorFirstName, S.LNAME AS SupervisorLastName
+FROM EMPLOYEE E
+,EMPLOYEE S WHERE E.SUPERSSN = S.SSN;
+
+
+--7. Show the resulting salaries if every employee working on the 'ProductX' project is given a 10 percent raise.. 
+SELECT E.FNAME, E.LNAME, E.SALARY * 1.10 AS NewSalary
+FROM EMPLOYEE E
+JOIN WORKS_ON W ON E.SSN = W.ESSN
+JOIN PROJECT P ON W.PNO = P.PNUMBER
+WHERE P.PNAME = 'ProductX';
+
+
+
+--8. Retrieve a list of employees and the projects they are working on, ordered by department and, within each 
+--department, ordered alphabetically by last name, first name. 
+
+SELECT D.DNAME, E.LNAME, E.FNAME, P.PNAME
+FROM EMPLOYEE E
+JOIN WORKS_ON W ON E.SSN = W.ESSN
+JOIN PROJECT P ON W.PNO = P.PNUMBER
+JOIN DEPARTMENT D ON E.DNO = D.DNUMBER
+ORDER BY D.DNAME, E.LNAME, E.FNAME;
+
+--9. Retrieve the names of all employees who do not have supervisors. 
+SELECT E.FNAME, E.LNAME
+FROM EMPLOYEE E
+WHERE E.SUPERSSN IS NULL;
+
+--10. Retrieve the name of each employee who has a dependent with the same last name as the employee. 
+SELECT DISTINCT E.FNAME, E.LNAME
+FROM EMPLOYEE E
+JOIN DEPENDENT D ON E.SSN = D.ESSN
+WHERE E.LNAME = D.DEPENDENT_NAME;
+
+--11. Retrieve the social security numbers of all employees who work on project numbers 1,2. 
+SELECT DISTINCT W.ESSN
+FROM WORKS_ON W
+WHERE W.PNO IN (1, 2);
+
+--12. Returns the names of employees whose salary is greater than the salary of all the employees in department 5: 
+SELECT E.FNAME, E.LNAME
+FROM EMPLOYEE E
+WHERE E.SALARY > ALL (
+    SELECT E2.SALARY
+    FROM EMPLOYEE E2
+    WHERE E2.DNO = 5
+);
+
+--13. Find the sum of the salaries of all employees, the maximum salary, the minimum salary, and the average salary.
+SELECT SUM(SALARY) AS TotalSalary,
+       MAX(SALARY) AS MaxSalary,
+       MIN(SALARY) AS MinSalary,
+       AVG(SALARY) AS AvgSalary
+FROM EMPLOYEE;
+
+--14. Find the sum of the salaries of all employees of the 'Research' department, as well as the maximum salary, the 
+--minimum salary, and the average salary in this department. 
+SELECT SUM(E.SALARY) AS TotalSalary,
+       MAX(E.SALARY) AS MaxSalary,
+       MIN(E.SALARY) AS MinSalary,
+       AVG(E.SALARY) AS AvgSalary
+FROM EMPLOYEE E
+JOIN DEPARTMENT D ON E.DNO = D.DNUMBER
+WHERE D.DNAME = 'Research';
+
+--15. Retrieve the names of all employees who have two or more dependents.
+SELECT E.FNAME, E.LNAME
+FROM EMPLOYEE E
+WHERE (SELECT COUNT(*)
+       FROM DEPENDENT D
+       WHERE D.ESSN = E.SSN) >= 2;
+
+--16. Count the total number of employees whose salaries exceed $40,000 in each department, but only for departments 
+--where more than five employees work.  
+SELECT E.DNO, COUNT(*) AS EmployeeCount
+FROM EMPLOYEE E
+WHERE E.SALARY > 40000
+GROUP BY E.DNO
+HAVING COUNT(*) > 5;
+
+--17. For each project, retrieve the project number, the project name, and the number of employees who work on that 
+--project. 
+SELECT P.PNUMBER, P.PNAME, COUNT(W.ESSN) AS EmployeeCount
+FROM PROJECT P
+JOIN WORKS_ON W ON P.PNUMBER = W.PNO
+GROUP BY P.PNUMBER, P.PNAME;
+
+--18. For each project on which more than two employees work, retrieve the project number, the project name, and the 
+--number of employees who work on the project. 
+SELECT PNUMBER, PNAME, COUNT (*)
+FROM PROJECT, WORKS_ON
+WHERE PNUMBER = PNO
+GROUP BY PNUMBER, PNAME
+HAVING COUNT (*) > 2;
+--19. For each project, retrieve the project number, the project name, and the number of employees from department 5 who 
+--work on the project. 
+SELECT PNUMBER, PNAME, COUNT (*)
+FROM PROJECT, WORKS_ON, EMPLOYEE
+WHERE PNUMBER = PNO AND SSN = ESSN AND DNO = 5
+GROUP BY PNUMBER, PNAME;
+
+
+--20. For each department that has more than five employees, retrieve the department number and the number of its 
+--employees who are making more than $40,000.
+SELECT DNUMBER, COUNT (*)
+FROM DEPARTMENT, EMPLOYEE
+WHERE DNUMBER = DNO AND SALARY > 40000 AND
+DNO IN (SELECT DNO
+FROM EMPLOYEE
+GROUP BY DNO
+HAVING COUNT (*) > 5)
+GROUP BY DNUMBER;

@@ -1,0 +1,433 @@
+-- sailor database
+
+-- create sailor table
+
+CREATE TABLE SAILOR(
+    SID VARCHAR2(4),
+    SNAME VARCHAR2(15),
+    MNAME VARCHAR2(15),
+    SURNAME VARCHAR2(15),
+    RATING NUMBER(2),
+    AGE NUMBER(3,1)
+);
+
+-- CREATE TABLE BOAT
+
+CREATE TABLE BOAT(
+    BID NUMBER(3),
+    BNAME VARCHAR2(10),
+    COLOR VARCHAR2(6)
+);
+
+-- CREATE TABLE RESERVE
+
+CREATE TABLE RESERVE(
+    SID VARCHAR2(4),
+    BID NUMBER(3),
+    DAY DATE
+);
+
+
+-- ADD CONSTRAINTS TO THE TABLE
+
+-- SAILOR
+ALTER TABLE SAILOR ADD(
+    CONSTRAINT SID_PK PRIMARY KEY(SID),
+    CONSTRAINT SID_START_s CHECK(SID LIKE 's%'),
+    CONSTRAINT SNAME_INITCAP CHECK(SNAME=INITCAP(SNAME))
+);
+
+-- BOAT
+alter table boat add (
+	constraint bid_pk primary key(bid),
+	constraint bname_lower check(bname=lower(bname)),
+	constraint color_check check(color in ('red', 'blue', 'green'))
+);
+
+
+-- RESERVE
+ALTER TABLE RESERVE ADD(
+    CONSTRAINT SID_FK_SAILOR FOREIGN KEY(SID) REFERENCES SAILOR(SID),
+    CONSTRAINT BID_FK_BOAT FOREIGN KEY(BID) REFERENCES BOAT(BID),
+    CONSTRAINT DAY_BEFORE_2000 CHECK(DAY<'1 JAN 2000'),
+    CONSTRAINT SID_BID_COMP_PK PRIMARY KEY(SID,BID)
+);
+
+-- INSERT VALUES
+
+--SAILOR
+insert into sailor values('s22','Fredrico','','Roberts','7','45');
+insert into sailor values('s31','Lubber','','Sheen','8','55.5');
+insert into sailor values('s32','Charlotte','','Gordin','8','25.5');
+insert into sailor values('s58','Mary','Beth','Lyon','10','35');
+insert into sailor values('s64','Horatio','','Powell','7','35.4');
+insert into sailor values('s71','Zorba','','Alex','10','16');
+insert into sailor values('s29','Brutus','','Slater','11','33.8');
+insert into sailor values('s95','Deep','Graceb','Davis','22','63.5');
+insert into sailor values('s74','Horatio','','Forrest','9','35');
+insert into sailor values('s85','Sara','Art','Powell','3','25.5');
+insert into sailor values('s80','Deep','Kumar','Kumar','6','17');
+insert into sailor values('s87','Deep','kumar','Jha','8','51');
+insert into sailor values('s97','Bob','','Gordin','31','55');
+insert into sailor values('s98','Dip','','Sen','22','45');
+
+
+SELECT * FROM SAILOR;
+
+--BOAT
+insert into boat values('101','interlake','blue');
+insert into boat values('102','interlake','red');
+insert into boat values('103','clipper','green');
+insert into boat values('104','marine','red');
+SELECT * FROM BOAT;
+
+--RESERVE
+insert into reserve values('s22','101','10-oct-1998');
+insert into reserve values('s22','103','10-aug-1998');
+insert into reserve values('s22','102','10-oct-1998');
+insert into reserve values('s22','104','10-jul-1998');
+insert into reserve values('s31','102','10-oct-1998');
+insert into reserve values('s31','103','11-jun-1998');
+insert into reserve values('s31','104','11-dec-1998');
+insert into reserve values('s64','101','09-may-1998');
+insert into reserve values('s64','102','09-aug-1998');
+insert into reserve values('s74','103','09-aug-1998');
+insert into reserve values('s80','102','07-jul-1998');
+insert into reserve values('s87','101','08-jul-1998');
+insert into reserve values('s87','102','12-dec-1998');
+
+SELECT * FROM RESERVE;
+
+
+
+SELECT * FROM SAILOR;
+------- QUERRIES
+-- 1) Find the names and ages of all sailors. 
+SELECT SNAME||' '||MNAME||' '||SURNAME AS FULL_NAME, AGE FROM SAILOR;
+
+-- 2) Show names under the heading of names_of_sailors and add 2 to age
+ SELECT SNAME||' '||MNAME||' '||SURNAME AS NAMES_OF_SAILORS, AGE+2 AS AGE_PLUS_TWO FROM SAILOR;
+ 
+-- 3) Select all records from sailors in ascending order by name; 
+SELECT * FROM SAILOR ORDER BY SNAME ASC;
+
+-- 4) Show all sailors name.
+SELECT SNAME||' '||MNAME||' '||SURNAME AS FULL_NAME FROM SAILOR;
+
+-- 5) Select all distinct sailors name. 
+SELECT DISTINCT SNAME AS NAME FROM SAILOR;
+-- 6) Show all distinct sailors names, ratings who have rating between 5 and 10. 
+SELECT DISTINCT SNAME,RATING FROM SAILOR WHERE RATING BETWEEN 5 AND 10;
+
+-- 7) Select all records from sailors in ascending order by rating and descending order by age. 
+SELECT * FROM SAILOR ORDER BY RATING,AGE DESC;
+
+-- 8) Select all records from sailors whose rating>7
+SELECT * FROM SAILOR WHERE RATING >7;
+
+-- 9) Find records for sailor name Horatio and age=35.4.
+SELECT * FROM SAILOR WHERE SNAME='Horatio' AND AGE=35.4;
+
+-- 10) Find records for sailor name Horatio or age=35.4. 
+SELECT * FROM SAILOR WHERE SNAME='Horatio' OR AGE=35.4;
+
+--11) Select names of sailors who have reserved boat 104. 
+-- USING SUBQUERY 
+SELECT SNAME||' '||MNAME||' '||SURNAME AS FULL_NAME FROM SAILOR S WHERE S.SID IN(SELECT SID FROM RESERVE WHERE BID='104');
+-- NATURAL JOIN
+SELECT SNAME||' '||MNAME||' '||SURNAME AS FULL_NAME FROM SAILOR S NATURAL JOIN RESERVE R WHERE BID=104;
+-- WITHOUT NATURAL JOIN EXPLICITLUY
+SELECT SNAME||' '||MNAME||' '||SURNAME AS FULL_NAME FROM SAILOR S ,RESERVE R WHERE S.SID=R.SID AND BID=104;
+
+-- 12) Find sid of sailors who have reserved red boat 
+-- USING MULTIPLE SUBQUERY 
+SELECT SID, SNAME||' '||MNAME||' '||SURNAME AS FULL_NAME FROM SAILOR WHERE SID IN (SELECT SID FROM RESERVE WHERE BID IN (SELECT BID FROM BOAT WHERE COLOR='red'));
+-- NATURAL JOIN
+SELECT DISTINCT SID, SNAME||' '||MNAME||' '||SURNAME AS FULL_NAME FROM SAILOR S NATURAL JOIN BOAT B NATURAL JOIN RESERVE R WHERE B.COLOR='red';
+-- WITHOUT NATURAL JOIN EXPLICITLY
+SELECT DISTINCT S.SID, SNAME||' '||MNAME||' '||SURNAME AS FULL_NAME FROM SAILOR S , BOAT B, RESERVE R WHERE S.SID=R.SID AND R.BID=B.BID AND B.COLOR='red';
+
+-- 13) Select records for name beginning with ‘B’. 
+SELECT *  FROM SAILOR WHERE SNAME LIKE 'B%';
+
+-- 14) Select records for name containing ‘B’/’b’.
+SELECT * FROM SAILOR WHERE SNAME LIKE '%B%' OR SNAME LIKE '%b%';
+
+-- 15) Select names for mname present. 
+SELECT SNAME FROM SAILOR WHERE MNAME IS NOT NULL;
+
+-- 16) Select names for mname absent.
+SELECT SNAME FROM SAILOR WHERE MNAME IS NULL;
+
+-- 17) Find color of boats reserved by Lubber. 
+SELECT  DISTINCT COLOR  FROM BOAT B, SAILOR S, RESERVE R WHERE S.SID=R.SID AND R.BID=B.BID AND S.SNAME ='Lubber';
+
+-- 18) Find a sailor name that have reserved at least one boat. 
+SELECT  SNAME||' '||MNAME||' '||SURNAME AS FULL_NAME FROM SAILOR WHERE SID IN(SELECT SID FROM RESERVE ); 
+
+-- 20) Compute the increments of rating  -----------------> of persons who have sailed on diff boats on the same day. 
+-- USING SUBQUERY
+SELECT SNAME||' '||MNAME||' '||SURNAME AS FULL_NAME, RATING+1 AS INCREMENTED_RATING FROM SAILOR  WHERE SID IN(SELECT R1.SID FROM RESERVE R1 , RESERVE R2 WHERE R1.SID =R2.SID AND R1.DAY =R2.DAY AND R1.BID <> R2.BID);
+-- USING JOIN 
+SELECT DISTINCT SNAME||' '||MNAME||' '||SURNAME AS FULL_NAME, RATING+1 AS INCREMENTED_RATING FROM SAILOR S JOIN RESERVE R1 ON R1.SID=S.SID JOIN RESERVE R2 ON R2.SID=S.SID WHERE R1.DAY =R2.DAY AND R1.BID <> R2.BID;
+
+-- 21) Find name of sailors whose name begins and ends with B and has at least 3 characters. 
+SELECT SNAME FROM SAILOR WHERE SNAME LIKE 'B%' AND LENGTH(SNAME)>=3;
+
+--22) Find names of sailors whose name begins and ends with ‘B’ and has exactly 3 chars. 
+SELECT SNAME FROM SAILOR WHERE SNAME LIKE 'B_b';
+
+--23) Find names of sailors who have reserved a red boat or a green boat. 
+-- USING SUBQUERY
+SELECT DISTINCT SNAME FROM SAILOR WHERE SID IN (SELECT SID FROM RESERVE R , BOAT B WHERE R.BID=B.BID AND B.COLOR IN ('red','green'));
+-- USING NATURAL JOIN
+SELECT DISTINCT SNAME FROM SAILOR  NATURAL JOIN RESERVE  NATURAL JOIN BOAT WHERE COLOR IN  ('red','green');
+-- USING UNION
+SELECT DISTINCT SNAME FROM SAILOR  NATURAL JOIN RESERVE  NATURAL JOIN BOAT  WHERE COLOR ='red'
+UNION
+SELECT DISTINCT SNAME FROM SAILOR  NATURAL JOIN RESERVE  NATURAL JOIN BOAT  WHERE COLOR ='green';
+
+-- 24) Find names of sailors who have reserved a red boat but not a green boat.
+-- USING MINUS
+SELECT DISTINCT SNAME FROM SAILOR  NATURAL JOIN RESERVE  NATURAL JOIN BOAT  WHERE COLOR ='red'
+MINUS
+SELECT DISTINCT SNAME FROM SAILOR  NATURAL JOIN RESERVE  NATURAL JOIN BOAT  WHERE COLOR ='green';
+
+--25) Find names of sailors who have reserved boat 103. 
+SELECT SNAME FROM SAILOR S, RESERVE R WHERE R.SID=S.SID AND R.BID=103;
+-- USING SUBQUERY
+SELECT SNAME FROM SAILOR WHERE SID IN  (SELECT SID FROM RESERVE WHERE BID=103);
+
+-- 26) Find names of sailors who have reserved red boat.  
+-- USING SUBQUERY
+SELECT DISTINCT SNAME FROM SAILOR WHERE SID IN (SELECT SID FROM RESERVE WHERE BID IN (SELECT BID FROM BOAT WHERE COLOR='red'));
+-- USING NATURAL JOIN
+SELECT DISTINCT SNAME FROM SAILOR NATURAL JOIN RESERVE NATURAL JOIN  BOAT WHERE COLOR='red'; 
+
+-- 28) Find names of sailors who have not reserved red boat.   
+SELECT S.SID,SNAME FROM SAILOR S,RESERVE R WHERE R.SID=S.SID
+MINUS
+SELECT S.SID,SNAME FROM SAILOR S,RESERVE R , BOAT B WHERE S.SID=R.SID AND B.BID=R.BID AND B.COLOR='red';
+
+--29) Count distinct sailor name from sailors. 
+SELECT DISTINCT COUNT(*) AS TOTAL_SAILOR FROM SAILOR;
+
+--30)a) Find all records for the rating>some sailor name where sailor name like ‘Horatio’.
+SELECT * FROM SAILOR WHERE RATING>ANY(SELECT RATING FROM SAILOR WHERE SNAME='Horatio');
+
+-- b) Find all records for the rating>all sailor name where sailor name like ‘Horatio’. 
+SELECT * FROM SAILOR WHERE RATING>ALL(SELECT RATING FROM SAILOR WHERE SNAME='Horatio');
+
+--31(a)Find all records for the rating<some sailor name where sailor name like ‘Horatio’.
+SELECT * FROM SAILOR WHERE RATING<ANY(SELECT RATING FROM SAILOR WHERE SNAME='Horatio');
+
+--    (b)Find all records for the rating<all sailor name where sailor name like ‘Horatio’. 
+SELECT * FROM SAILOR WHERE RATING<ALL(SELECT RATING FROM SAILOR WHERE SNAME='Horatio');
+
+--32) Select all records for s_name neither Lubber nor Horatio. 
+SELECT * FROM SAILOR WHERE SNAME NOT IN ('Lubber','Horatio');
+
+--33) Find names of sailors whose rating is>10/20/30 using multirow subquery operator
+SELECT SNAME FROM SAILOR WHERE RATING > ANY(10,20,30);
+
+--34) Find names of sailors whose rating is>10 & 20 & 30 using multirow subquery operator. 
+SELECT SNAME FROM SAILOR WHERE RATING > ALL(10,20,30);
+
+--35) Find average age of sailors with rating 10. 
+SELECT AVG(AGE) FROM SAILOR WHERE RATING =10;
+
+--36) Find the name of sailor who are older than oldest sailor of rating=10.  
+SELECT SNAME FROM SAILOR WHERE AGE>(SELECT MAX(AGE) FROM SAILOR WHERE RATING=10);
+
+--37) Find the age of youngest sailor for each rating level. 
+SELECT MIN(AGE) AS MIN_AGE,RATING FROM SAILOR GROUP BY RATING;
+
+--38) Find the no of  sailor who is eligible to vote for each rating level.
+SELECT  COUNT(*) AS ELIGBILE_CANDIDATES_FOR_VOTE, RATING FROM SAILOR WHERE AGE>=18 GROUP BY RATING ;
+
+--39) Find the age of youngest sailor who is eligible to vote for each rating level with at least two such sailors.
+SELECT MIN(AGE) AS MIN_AGE,RATING FROM SAILOR  WHERE AGE>=18 GROUP BY RATING HAVING COUNT(*)>=2;
+
+--40) Find the average age of sailor for each rating level with at least two such sailor.
+SELECT AVG(AGE) AS AVG_AGE,RATING FROM SAILOR  GROUP BY RATING HAVING COUNT(*)>=2;
+-- 41) For each red boat count the no of reservations for this boat. 
+--USING SUBQUERRY 
+SELECT COUNT(*) AS NO_OF_RESERVES, R.BID  FROM RESERVE R WHERE R.BID IN (SELECT BID FROM BOAT WHERE COLOR='red') GROUP BY R.BID;
+-- NOT USING SUBQUERY 
+SELECT COUNT(*) AS NO_OF_RESERVES, R.BID  FROM RESERVE R, BOAT B WHERE R.BID=B.BID AND B.COLOR='red' GROUP BY R.BID;
+
+--42) Find sailor with highest rating. 
+SELECT * FROM SAILOR WHERE RATING=(SELECT MAX(RATING) FROM SAILOR);
+
+--44) Find those rating for which the average age of sailors is minimum over all rating.
+--USING SUBQUERY
+SELECT AVG(AGE) AS AVG_AGE, RATING FROM SAILOR GROUP BY RATING HAVING AVG(AGE)<= ALL(SELECT AVG(AGE) FROM SAILOR GROUP BY RATING);
+-- USING CTE
+WITH AVG_AGE_PER_RATING AS(
+    SELECT AVG(AGE) AS AVG_AGE, RATING FROM SAILOR GROUP BY RATING
+)
+SELECT AVG_AGE, RATING FROM AVG_AGE_PER_RATING WHERE AVG_AGE <= ALL(SELECT AVG_AGE FROM AVG_AGE_PER_RATING);
+--45) Find sailors who have reserved all boats. 
+-- APPORACH 1 (WITHOUT JOIN EXPLICITLY)
+SELECT S.SID,S.SNAME FROM SAILOR S ,  RESERVE R  WHERE R.SID=S.SID GROUP BY S.SNAME HAVING  COUNT( DISTINCT R.BID)= (SELECT COUNT(*) FROM BOAT);
+-- USING JOIN(APPROACH 2)
+-- USING EXISTS
+SELECT SID ,SNAME FROM SAILOR S WHERE NOT EXISTS(
+SELECT BID FROM BOAT
+MINUS
+SELECT BID FROM RESERVE R  WHERE R.SID=S.SID
+);
+
+-- 46) Display s_name with left side padding by at least 3 *.
+-- WITHOUT STRING FUNCTION
+SELECT  ('***' || SNAME) AS PADDED_SNAME FROM SAILOR;
+-- WITH STRING FUNCTION
+SELECT CONCAT('***',SNAME)AS PADDED_SNAME FROM SAILOR;
+
+--47) Display length of each name. 
+SELECT SNAME, LENGTH(SNAME) AS LEN_NAME FROM SAILOR ;
+
+--48) Display all sailors names in uppercase. 
+SELECT UPPER(SNAME||' '||MNAME||' '||SURNAME) AS UPPER_FULLNAME FROM SAILOR;
+
+--49) Display all sailors’ names in lower case. 
+SELECT LOWER(SNAME||' '||MNAME||' '||SURNAME) AS LOWER_FULLNAME FROM SAILOR;
+
+--50) Display all sailors names in sentence case. 
+-- USING SUBSTRING FUNCTION
+SELECT UPPER(SUBSTR(SNAME,1,1))||LOWER(SUBSTR(SNAME,2))||' '||UPPER(SUBSTR(MNAME,1,1))||LOWER(SUBSTR(MNAME,2))||' '||UPPER(SUBSTR(SURNAME,1,1))||LOWER(SUBSTR(SURNAME,2)) AS SENTENCE_FULLNAME FROM SAILOR;
+-- USING INITCAP
+SELECT INITCAP(SNAME)||' '||INITCAP(MNAME)||' '||INITCAP(SURNAME) AS  SENTENCE_FULLNAME FROM SAILOR;
+
+--51) Display 4th to 7th letter of sailors name.
+SELECT SNAME||' '||MNAME||' '||SURNAME AS FULL_NAME, SUBSTR(SNAME||' '||MNAME||' '||SURNAME,4,4) AS FOURTH_TO_SEVENTH_LETTER FROM SAILOR;
+
+--52) Display 4th and 7th letter of sailors name.
+SELECT SNAME||' '||MNAME||' '||SURNAME AS FULL_NAME, SUBSTR(SNAME||' '||MNAME||' '||SURNAME,4,1) AS FOURTH_LETTER,SUBSTR(SNAME||' '||MNAME||' '||SURNAME,7,1) AS SEVENTH_LETTER FROM SAILOR;
+
+--53) Concat  s_id, s_name. 
+SELECT CONCAT(SID,SNAME) AS CONCATTED_SID_SNAME FROM SAILOR;
+
+--54) Display square root of rating. 
+SELECT RATING, SQRT(RATING) AS SQRT_RATING FROM SAILOR;
+
+--55) Display floor values of all ages
+SELECT AGE, FLOOR(AGE) AS FLOOR_VALUE_OF_AGE FROM SAILOR;
+
+-- 56) Display ceiling values of all ages. 
+SELECT AGE, CEIL(AGE) AS CEIL_VALUE_OF_AGE FROM SAILOR;
+
+-- 57) Select all s_name with 1st 2 letters off. 
+SELECT  SNAME,SUBSTR(SNAME,3) AS FIRST_TWO_LETTER_OFF_SNAME FROM SAILOR;
+
+--58) List months between today and reservation date.
+SELECT DAY,TRUNC(MONTHS_BETWEEN(SYSDATE,DAY))AS LIST_OF_MONTHS_BETWEEN_TODAY_AND_RESERVE_DAY FROM RESERVE;
+
+
+
+--59) Select day between today and reservation date. 
+SELECT DAY,TRUNC(SYSDATE)-DAY AS NO_OF_DAYS_BETWEEN_TODAY_AND_RESERVE_DAY FROM RESERVE;
+
+--60) Shift all reservation day by 2 months.
+UPDATE RESERVE SET DAY = ADD_MONTHS(DAY, 2);
+
+--61) Shift all reservation day earlier by 3 months.
+UPDATE RESERVE SET DAY= ADD_MONTHS(DAY,-3);
+
+--62)  Suppose after sailing they enjoy their next Monday as holiday. Find that day.
+SELECT DAY, NEXT_DAY(DAY+1, 'MONDAY') AS NEXT_MONDAY FROM RESERVE ;
+
+--63) Display 3 * before and after each s_name. 
+SELECT '***'||SNAME||'***' AS PADDED_LEFT_RIGHT_SNAME FROM SAILOR;
+
+--64) Find the date when sailing ends. 
+SELECT MAX(DAY)AS END_DAY FROM RESERVE;
+
+-- 65) Display all reservation day. 
+SELECT DAY,TO_CHAR(DAY,'DAY') FROM RESERVE;
+
+-- 66)Find the position of ‘Kumar’ in the sailors name. 
+SELECT SNAME,INSTR(SNAME||' '||MNAME||' '||SURNAME, 'Kumar') AS POS_OF_KUMAR FROM SAILOR;
+
+--67)display all saiors name order by its length. 
+SELECT * FROM SAILOR ORDER BY LENGTH(SNAME);
+
+--68)display sid,sname and availability of middle name which pint as ‘available’ or ‘not available’. 
+SELECT SID,SNAME,SNAME||' '||MNAME||' '||SURNAME AS FULLNAME ,
+CASE 
+    WHEN MNAME IS NOT NULL THEN 'AVAILABLE' ELSE 'NOT AVAILABLE' END AS MIDDLE_NAME_AVAILABILITY
+FROM SAILOR;
+
+--69)display all reservation day like ‘22nd March twenty tWO’ and 12/09/1998. 
+SELECT TO_CHAR(day, 'DD') ||
+       CASE
+           WHEN TO_CHAR(day, 'DD') IN ('01', '21', '31') THEN 'st'
+           WHEN TO_CHAR(day, 'DD') IN ('02', '22') THEN 'nd'
+           WHEN TO_CHAR(day, 'DD') IN ('03', '23') THEN 'rd'
+           ELSE 'th'
+       END || ' ' ||
+       TO_CHAR(day, 'Month') || ' ' ||
+       TO_CHAR(day, 'year') as formatted_date,
+       TO_CHAR(day, 'dd/mm/yyyy')
+FROM reserve;
+
+--70)find the day of weekdays of reservation date.
+SELECT TO_CHAR(DAY,'D')AS DAY_NUMBER,
+CASE 
+    WHEN TO_CHAR(DAY,'D')=1 THEN 'SUNDAY'
+    WHEN TO_CHAR(DAY,'D')=2 THEN 'MONDAY'
+    WHEN TO_CHAR(DAY,'D')=3 THEN 'TUESDAY'
+    WHEN TO_CHAR(DAY,'D')=4 THEN 'WEDNESDAY'
+    WHEN TO_CHAR(DAY,'D')=5 THEN 'THURSDAY'
+    WHEN TO_CHAR(DAY,'D')=6 THEN 'FRIDAY'
+    WHEN TO_CHAR(DAY,'D')=7 THEN 'SATURDAY'
+END AS DAY_NAME
+FROM RESERVE;
+
+-- 71)find the number of day of weekdays of reservation date. 
+SELECT TO_CHAR(DAY,'D')AS DAY_NUMBER FROM RESERVE;
+
+-- 72) Find the number of days passed upto reservation date of that year. 
+SELECT DAY,TO_CHAR(DAY,'DDD') AS DAYS_PASSED_FROM_RESERVE_DATE FROM RESERVE;
+
+--73) Display the number of weeks of the year for reservation day  
+SELECT DAY,TO_CHAR(DAY,'IW') AS WEEKS_PASSED_FROM_RESERVE_DATE FROM RESERVE; --USE ISO STANDARD
+SELECT DAY,TO_CHAR(DAY,'WW') AS WEEKS_PASSED_FROM_RESERVE_DATE FROM RESERVE;
+
+'''
+Parameter	Explanation
+YEAR	Year, spelled out
+YYYY	4-digit year
+
+YYY
+YY      Last 3, 2, or 1 digit(s) of year.
+Y	
+
+IYY
+IY      Last 3, 2, or 1 digit(s) of ISO year.
+I
+
+IYYY	4-digit year based on the ISO standard
+Q	Quarter of year (1, 2, 3, 4; JAN-MAR = 1).
+MM	Month (01-12; JAN = 01).
+MON	Abbreviated name of month.
+MONTH	Name of month, padded with blanks to length of 9 characters.
+RM	Roman numeral month (I-XII; JAN = I).
+WW	Week of year (1-53) where week 1 starts on the first day of the year and continues to the seventh day of the year.
+W	Week of month (1-5) where week 1 starts on the first day of the month and ends on the seventh.
+IW	Week of year (1-52 or 1-53) based on the ISO standard.
+D	Day of week (1-7).
+DAY	Name of day.
+DD	Day of month (1-31).
+DDD	Day of year (1-366).
+DY	Abbreviated name of day.
+J	Julian day; the number of days since January 1, 4712 BC.
+HH	Hour of day (1-12).
+HH12	Hour of day (1-12).
+HH24	Hour of day (0-23).
+MI	Minute (0-59).
+SS	Second (0-59).
+SSSSS	Seconds past midnight (0-86399).
+FF	Fractional seconds.
+'''
+
